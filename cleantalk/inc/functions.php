@@ -60,14 +60,28 @@ function apbct_spam_test($data){
             $exclusions_in_post = array();
         }
 
+        $url_exclusions = array();
 
-        // Skip check if
+        if (
+            strpos($_SERVER['SCRIPT_NAME'], 'server.php') !== false //laravel sign
+        ) {
+            $url_exclusions = array(
+                'recharge_user_by_wallet',
+                'delete-user',
+                'update-user',
+                'password/email'
+            );
+        }
+
+
+
+    // Skip check if
         if ( $skip || // Skip flag set by apbct_get_fields_any()
             (!$sender_email && !$general_postdata_test) || // No email detected and general post data test is disabled
             ($registration && !$registrations_test) || // It's registration and registration check is disabled
             (apbct_check__exclusions()) || // main exclusion function
             (apbct_check__exclusions_in_post($exclusions_in_post)) || // Has an exclusions in POST
-            (apbct_check__url_exclusions()) // Has an exclusions in URL
+            (apbct_check__url_exclusions($url_exclusions)) // Has an exclusions in URL
         ) {
             $skip = true;
         }
