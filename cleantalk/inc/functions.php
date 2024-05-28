@@ -493,7 +493,12 @@ function apbct_spam_test($data){
                     $login_word = 'login/index.php';
                     break;
                 }
-                //add a new rule if needs
+                case 'OpenMage':
+                {
+                    $exclusions[] = 'sales_order_create';
+                    $exclusions[] = 'customer/validate';
+                    break;
+                }
             }
         }
 		$exclusions[] = $login_word;
