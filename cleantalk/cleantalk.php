@@ -117,9 +117,14 @@
         apbct_spam_test($_GET);
     }
 
+    $request_data = $_POST;
+    if ( empty($request_data) ) {
+        $request_data = getRequestDataFromRaw();
+    }
+
 	// General spam test
-	if(!empty($_POST)){
-		apbct_spam_test($_POST);
+	if( ! empty($request_data) ){
+		apbct_spam_test($request_data);
 	}
 
 	// Set Cookies test for cookie test

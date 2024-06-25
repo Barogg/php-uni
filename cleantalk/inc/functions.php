@@ -5,6 +5,19 @@ use Cleantalk\Common\GetFieldsAny;
 use Cleantalk\Variables\Cookie;
 use Cleantalk\Variables\Post;
 
+function getRequestDataFromRaw()
+{
+    $raw = file_get_contents('php://input');
+    if ( ! $raw ) {
+        return array();
+    }
+    $json = json_decode($raw, true);
+    if ( ! $json ) {
+        return array();
+    }
+    return $json;
+}
+
 /*
 * Performs spam test
 * @return void or exit script
