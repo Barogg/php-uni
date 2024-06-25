@@ -66,7 +66,7 @@
 		global $apbct_checkjs_val;
 		if(
 			!(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') // No ajax
-			&& preg_match('/^\s*(<!doctype|<html)[\s\S]*html>/i', $buffer) == 1 // Only for HTML documents
+			&& preg_match('/\s*(<!doctype|<html)[\s\S]*html>/i', $buffer) == 1 // Only for HTML documents
 		){
 			$html_addition =
 				'<script>var apbct_checkjs_val = "' . $apbct_checkjs_val . '";</script>'
