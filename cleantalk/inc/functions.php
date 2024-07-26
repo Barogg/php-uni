@@ -485,13 +485,12 @@ function apbct_spam_test($data){
         global $detected_cms;
 
         //custom login word transform ruleset
-        $login_word = 'login';
         if ( isset($detected_cms) ) {
             switch ( $detected_cms ) {
                 //moodle case
                 case 'moodle':
                 {
-                    $login_word = 'login/index.php';
+                    $exclusions[] = 'login/index.php';
                     break;
                 }
                 case 'OpenMage':
@@ -502,7 +501,6 @@ function apbct_spam_test($data){
                 }
             }
         }
-		$exclusions[] = $login_word;
 
 		foreach ( $exclusions as $name => $exclusion ){
 			if( \Cleantalk\Variables\Server::has_string('REQUEST_URI', $exclusion ) ){
