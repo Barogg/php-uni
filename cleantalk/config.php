@@ -1,5 +1,5 @@
 <?php
-
+//warning: do not use ";" symbol in strings without serialization!
 //Settings
 	$antispam_activity_status = true;
 	$registrations_test = true;
