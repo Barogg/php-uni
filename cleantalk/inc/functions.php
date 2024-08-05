@@ -522,6 +522,11 @@ function apbct_spam_test($data){
         if ( is_array($exclusions) && is_array($form_data) ) {
             foreach ( $exclusions as $exclusion ) {
                 foreach ($form_data as $key => $value) {
+                    if ( !empty($value) && is_array($value) ) {
+                        if ( apbct_check__form_signs_exclusions($value, $exclusions) ) {
+                            return true;
+                        }
+                    }
                     $haystack = ($key === 'action' || $key === 'data') ? $value : $key;
                     if (
                         $haystack === $exclusion ||
