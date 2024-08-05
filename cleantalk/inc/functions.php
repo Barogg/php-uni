@@ -29,8 +29,7 @@ function apbct_spam_test($data){
                $registrations_test,
                $general_postdata_test,
                $detected_cms,
-               $exclusion_key,
-               $general_post_exclusion_usage;
+               $form_post_signs_exclusions_set;
 
 		// Patch for old PHP versions.
 		require_once( CLEANTALK_ROOT . 'lib' . DS . 'ct_phpFix.php');
@@ -64,15 +63,6 @@ function apbct_spam_test($data){
             $registration = true;
         }
 
-        //init exclusions array if general_post_exclusion_usage is enabled
-        if ( isset($exclusion_key, $general_post_exclusion_usage) && $general_post_exclusion_usage ) {
-            $exclusions_in_post = array(
-                'ct_service_data' => $exclusion_key,
-            );
-        } else {
-            $exclusions_in_post = array();
-        }
-
         $url_exclusions = array();
 
         if (
@@ -86,15 +76,13 @@ function apbct_spam_test($data){
             );
         }
 
-
-
     // Skip check if
         if ( $skip || // Skip flag set by apbct_get_fields_any()
             (!$sender_email && !$general_postdata_test) || // No email detected and general post data test is disabled
             ($registration && !$registrations_test) || // It's registration and registration check is disabled
-            (apbct_check__exclusions()) || // main exclusion function
-            (apbct_check__exclusions_in_post($exclusions_in_post)) || // Has an exclusions in POST
-            (apbct_check__url_exclusions($url_exclusions)) // Has an exclusions in URL
+            (apbct_check__exclusions_general()) || // main exclusion function
+            (apbct_check__url_exclusions($url_exclusions)) || // Has an exclusions in URL
+            (apbct_check__form_signs_exclusions($data, $form_post_signs_exclusions_set)) // Has an exclusions in POST fields
         ) {
             $skip = true;
         }
@@ -497,13 +485,12 @@ function apbct_spam_test($data){
         global $detected_cms;
 
         //custom login word transform ruleset
-        $login_word = 'login';
         if ( isset($detected_cms) ) {
             switch ( $detected_cms ) {
                 //moodle case
                 case 'moodle':
                 {
-                    $login_word = 'login/index.php';
+                    $exclusions[] = 'login/index.php';
                     break;
                 }
                 case 'OpenMage':
@@ -514,7 +501,6 @@ function apbct_spam_test($data){
                 }
             }
         }
-		$exclusions[] = $login_word;
 
 		foreach ( $exclusions as $name => $exclusion ){
 			if( \Cleantalk\Variables\Server::has_string('REQUEST_URI', $exclusion ) ){
@@ -526,9 +512,41 @@ function apbct_spam_test($data){
 	}
 
     /**
+     * Check POST array for the exclusion form signs. Listen for array keys or for value in case if key is "action".
+     * @param array $form_data The POST array or another filtered array of form data.
+     * @param array $exclusions
+     * @return bool True if exclusion found in the keys of array, false otherwise.
+     */
+    function apbct_check__form_signs_exclusions($form_data, $exclusions)
+    {
+        if ( is_array($exclusions) && is_array($form_data) ) {
+            foreach ( $exclusions as $exclusion ) {
+                foreach ($form_data as $key => $value) {
+                    if ( !empty($value) && is_array($value) ) {
+                        if ( apbct_check__form_signs_exclusions($value, $exclusions) ) {
+                            return true;
+                        }
+                    }
+                    $haystack = ($key === 'action' || $key === 'data') ? $value : $key;
+                    if (
+                        $haystack === $exclusion ||
+                        (is_string($haystack) && stripos($haystack, $exclusion) !== false)  ||
+                        (is_string($haystack) && preg_match('@' . $exclusion . '@', $haystack) === 1)
+                    ) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        return false;
+    }
+
+
+    /**
      * Another function for excluding validation based on any number of parameters
      */
-    function apbct_check__exclusions() {
+    function apbct_check__exclusions_general() {
 
         global $detected_cms;
 
@@ -571,6 +589,14 @@ function apbct_spam_test($data){
             )
         ) {
             return true;
+        }
+
+        //init exclusions array if service_field_in_post_exclusion is enabled
+        if ( isset($exclusion_key, $service_field_in_post_exclusion_enabled) && $service_field_in_post_exclusion_enabled ) {
+            $service_field_exclusion = array(
+                'ct_service_data' => $exclusion_key,
+            );
+            return apbct_check__exclusions_in_post($service_field_exclusion);
         }
 
 		if (\Cleantalk\Variables\Get::equal('controller', 'ajax') &&

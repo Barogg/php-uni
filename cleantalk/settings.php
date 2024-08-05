@@ -98,9 +98,26 @@ if( Server::is_post() && Post::get( 'action' ) ){
                 File::replace__variable( $path_to_config, 'registrations_test', (bool)Post::get( 'registrations_test' ) );
                 File::replace__variable( $path_to_config, 'general_postdata_test', (bool)Post::get( 'general_postdata_test' ) );
                 File::replace__variable( $path_to_config, 'spam_firewall', (bool)Post::get( 'spam_firewall' ) );
-                File::replace__variable( $path_to_config, 'general_post_exclusion_usage', (bool)Post::get( 'general_post_exclusion_usage' ) );
+                File::replace__variable( $path_to_config, 'service_field_in_post_exclusion_enabled', (bool)Post::get( 'service_field_in_post_exclusion_enabled' ) );
 
-                // SFW actions
+                // form post sign exclusions
+                $form_post_exclusions_enabled = (bool)Post::get('form_post_exclusions_enabled');
+                $form_post_signs_exclusions_string = Post::get('form_post_exclusions_signs_string');
+
+                if ($form_post_exclusions_enabled && $form_post_signs_exclusions_string) {
+                    $form_post_signs_exclusions_set = apbct_settings__sanitize__exclusions($form_post_signs_exclusions_string, true);
+                    if (!$form_post_signs_exclusions_set || !is_array($form_post_signs_exclusions_set)) {
+                        die(Err::add('Exclusion regexp is not valid.')->get_last( 'as_json' ));
+                    }
+                    File::replace__variable( $path_to_config, 'form_post_signs_exclusions_set', $form_post_signs_exclusions_set );
+                    File::replace__variable( $path_to_config, 'form_post_exclusions_enabled', $form_post_exclusions_enabled );
+                } else {
+                    File::replace__variable( $path_to_config, 'form_post_exclusions_enabled', false );
+                }
+
+                /**
+                 * SFW actions
+                 */
                 if( Post::get( 'spam_firewall' ) && $apikey ){
 
                     $sfw = new SFW();
@@ -120,8 +137,9 @@ if( Server::is_post() && Post::get( 'action' ) ){
                 Err::check() or die(json_encode(array('success' => true)));
                 die(Err::check_and_output( 'as_json' ));
 
-            }else
+            } else {
                 die(Err::add('Forbidden')->get_last( 'as_json' ));
+            }
             break;
 
         case 'serve_run_cron_sfw_update':
@@ -282,37 +300,55 @@ if( Server::is_post() && Post::get( 'action' ) ){
                             <input class="form-control" type="text" placeholder="Access key" id="auth_key" name = "apikey" value =<?php if (isset($apikey)) echo $apikey; ?>>
                             <p>Account registered for email: <?php echo !empty($account_name_ob) ? $account_name_ob : 'unknown';  ?></p>
                         </div>
+                        <!-- Anti-Spam global on/off state -->
                         <div class="form-group row">
                             <input type="checkbox" class="checkbox style-2 apbct_setting-checkbox" id="antispam_activity_status" name="antispam_activity_status" <?php if (!empty($antispam_activity_status)) echo "checked"; ?>>
                             <label for="antispam_activity_status" class="apbct_setting-checkbox--label">Enable Antispam</label>
                         </div>
+                        <!-- Check registrations statement -->
                         <div class="form-group row">
                             <input type="checkbox" class="checkbox style-2 apbct_setting-checkbox" id="check_reg" name="registrations_test" <?php if (!empty($registrations_test)) echo "checked"; ?>>
                             <label for="check_reg" class="apbct_setting-checkbox--label">Check registrations</label>
                         </div>
+                        <!-- General POST data test with no email even -->
                         <div class="form-group row">
                             <input type="checkbox" class="checkbox style-2 apbct_setting-checkbox" id="check_without_email" name="general_postdata_test" <?php if (!empty($general_postdata_test)) echo "checked"; ?>>
                             <label for="check_without_email" class="apbct_setting-checkbox--label">Check data without email</label>
                         </div>
+                        <!-- Form service field exclusion -->
                         <div class="form-group row">
-                            <input type="checkbox" class="checkbox style-2 apbct_setting-checkbox" id="general_post_exclusion_usage" name="general_post_exclusion_usage" <?php if (!empty($general_post_exclusion_usage)) echo "checked"; ?>>
-                            <label for="general_post_exclusion_usage" class="apbct_setting-checkbox--label">Exclude forms contain a service field</label>
+                            <input type="checkbox" class="checkbox style-2 apbct_setting-checkbox" id="service_field_in_post_exclusion_enabled" name="service_field_in_post_exclusion_enabled"
+                                <?php if (!empty($service_field_in_post_exclusion_enabled)) echo "checked"; ?>
+                            >
+                            <label for="service_field_in_post_exclusion_enabled" class="apbct_setting-checkbox--label">Exclude forms contain a service field</label>
                             <div id="exclusions-div" style="margin: 1% 2%; padding: 1%;border: 1px solid #CFCFCF;
                             display:
-                            <?php echo $general_post_exclusion_usage ? 'inherit' : 'none' ?>
+                            <?php echo $service_field_in_post_exclusion_enabled ? 'inherit' : 'none' ?>
                             ">
-                                <p>Add the tag below to the form that needs to be excluded. Set unique "id" attribute if you have several forms on the same page:</p>
-                                <div id="exclusion-html" style="border: solid 1px; word-break: break-all; padding: 1%; background: #fff;">
-                                <?php echo htmlspecialchars('<input id="any_id_1" name="ct_service_data" type="hidden" value="'. $exclusion_key .'">') ?>
-                                </div>
+                                <?php echo apbct__prepare_service_field_exclusion_layout() ?>
                             </div>
                         </div>
+                        <!-- Form POST signs exclusions-->
+                        <div class="form-group row">
+                            <input type="checkbox" class="checkbox style-2 apbct_setting-checkbox" id="form_post_exclusions_signs_usage" name="form_post_exclusions_signs_usage"
+                                <?php if (!empty($form_post_exclusions_enabled)) echo "checked"; ?>
+                            >
+                            <label for="form_post_exclusions_signs_usage" class="apbct_setting-checkbox--label">Exclude forms by a sign</label>
+                            <div id="form_signs_exclusions-div" style="margin: 1% 2%; padding: 1%;border: 1px solid #CFCFCF;
+                            display:
+                            <?php echo !empty($form_post_exclusions_enabled)  ? 'inherit' : 'none' ?>
+                            ">
+                                <?php echo apbct__prepare_form_sign_exclusions_textarea() ?>
+                            </div>
+                        </div>
+                        <!-- SFW statement -->
                         <div class="form-group row">
                             <input type="checkbox" class="checkbox style-2 apbct_setting-checkbox" id="enable_sfw" name="spam_firewall" <?php if (!empty($spam_firewall)) echo "checked"; ?>>
                             <label for="enable_sfw" class="apbct_setting-checkbox--label">Enable SpamFireWall</label>
                         </div>
                     </div>
                 </div>
+                <!-- Statistics -->
                 <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6">
                     <h4><p class="text-center">Statistics</p></h4>
                     <hr>
@@ -334,7 +370,7 @@ if( Server::is_post() && Post::get( 'action' ) ){
                 <img class="preloader" src="img/preloader.gif" style="display: none;">
             </div>
         </form>
-
+        <!-- Debug items for CRON -->
         <?php if(in_array(Server::get_domain(), array('lc', 'loc', 'lh'))) : ?>
             <div class="text-center">
                 <button class="btn" id="serve_run_cron_sfw_update" style="display: inline">run cron task - sfw update in 120 sec</button>

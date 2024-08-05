@@ -101,12 +101,21 @@ jQuery(document).ready(function($) {
 	});
 
 	//set the block with special tag in dependence of post_exclusion_usage statement
-	$('#general_post_exclusion_usage').on('click', function(event) {
+	$('#service_field_in_post_exclusion_enabled').on('click', function(event) {
 		let state = 'none'
-		if ($('#general_post_exclusion_usage').prop('checked')){
+		if ($('#service_field_in_post_exclusion_enabled').prop('checked')){
 			state = 'inherit'
 		}
 		$('#exclusions-div').css('display',state)
+	});
+
+	//show array of exclusions
+	$('#form_post_exclusions_signs_usage').on('click', function(event) {
+		let state = 'none'
+		if ($('#form_post_exclusions_signs_usage').prop('checked')){
+			state = 'inherit'
+		}
+		$('#form_signs_exclusions-div').css('display',state)
 	});
 
 
@@ -290,7 +299,10 @@ jQuery(document).ready(function($) {
 				registrations_test: $('#check_reg').is(':checked') ? 1 : 0,
 				general_postdata_test: $('#check_without_email').is(':checked') ? 1 : 0,
 				spam_firewall: $('#enable_sfw').is(':checked') ? 1 : 0,
-				general_post_exclusion_usage: $('#general_post_exclusion_usage').is(':checked') ? 1 : 0,
+				service_field_in_post_exclusion_enabled: $('#service_field_in_post_exclusion_enabled').is(':checked') ? 1 : 0,
+				// form post signs exclusion
+				form_post_exclusions_enabled: $('#form_post_exclusions_signs_usage').is(':checked') ? 1 : 0,
+				form_post_exclusions_signs_string: $('textarea#form_signs_exclusions-textarea').val(),
 			},
 			{
 				callback: function(result, data, params, obj) {
