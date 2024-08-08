@@ -2,6 +2,7 @@
 
 namespace Cleantalk\ApbctUni\File;
 
+#[\AllowDynamicProperties]
 class BTreeLeaf {
 
 	// Node structure
