@@ -270,6 +270,10 @@ function detect_cms( $path_to_index, $out = 'Unknown' ){
         if ( preg_match('/(OpenMage.*?)/', $index_file) ) {
             $out = 'OpenMage';
         }
+        // vBulletin
+        if ( preg_match('/(vBulletin.*?)/', $index_file) ) {
+            $out = 'vBulletin';
+        }
     }
 
 	return $out;
