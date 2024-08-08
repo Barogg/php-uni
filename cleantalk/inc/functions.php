@@ -412,10 +412,6 @@ function apbct_spam_test($data){
                 die(json_encode(array('status' =>'ok', 'text' => $comment)));
             }
 
-            if( $detected_cms === 'vBulletin' ) {
-                die(json_encode(['error' => $comment]));
-            }
-
 			// Custom ajax response
 			require_once CLEANTALK_CONFIG_FILE;
 			global $ajax_response;

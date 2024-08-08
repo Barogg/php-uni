@@ -266,9 +266,9 @@ function detect_cms( $path_to_index, $out = 'Unknown' ){
         if ( preg_match('/(moodle.*?)/', $index_file) ) {
             $out = 'moodle';
         }
-        // vBulletin
-        if ( preg_match('/(vBulletin.*?)/', $index_file) ) {
-            $out = 'vBulletin';
+		// OpenMage
+        if ( preg_match('/(OpenMage.*?)/', $index_file) ) {
+            $out = 'OpenMage';
         }
     }
 
