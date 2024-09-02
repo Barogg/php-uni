@@ -1,11 +1,16 @@
 <?php
-
+//warning: do not use ";" symbol in strings without serialization!
 //Settings
 	$antispam_activity_status = true;
 	$registrations_test = true;
 	$general_postdata_test = false;
 	$spam_firewall = true;
-	$general_post_exclusion_usage = false;
+    // exclusion by service field
+	$service_field_in_post_exclusion_enabled = false;
+    //form post data signs exclusions
+	$form_post_exclusions_enabled = false;
+	$form_post_signs_exclusions_set = array (
+);
 
 // Statistics
 	$sfw_last_update = 0;

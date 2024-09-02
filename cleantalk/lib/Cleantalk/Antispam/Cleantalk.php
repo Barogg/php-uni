@@ -100,7 +100,7 @@ class Cleantalk {
     /**
      * Function checks whether it is possible to publish the message
      * @param CleantalkRequest $request
-     * @return type
+     * @return CleantalkResponse
      */
     public function isAllowMessage(CleantalkRequest $request) {
         $msg = $this->createMsg('check_message', $request);
@@ -242,7 +242,7 @@ class Cleantalk {
     /**
      * httpRequest
      * @param $msg
-     * @return boolean|CleantalkResponse
+     * @return CleantalkResponse
      */
     private function httpRequest($msg) {
 
@@ -375,8 +375,10 @@ class Cleantalk {
 
     /**
      * Send JSON request to servers
-     * @param $msg
-     * @return boolean|\CleantalkResponse
+     * @param $url
+     * @param $data
+     * @param $server_timeout
+     * @return boolean|CleantalkResponse
      */
     private function sendRequest($url, $data, $server_timeout = 3)
     {

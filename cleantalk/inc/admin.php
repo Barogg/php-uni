@@ -206,7 +206,7 @@ function uninstall( $files = array() ){
 	File::replace__variable( $path_to_config, 'registrations_test', true );
 	File::replace__variable( $path_to_config, 'general_postdata_test', false );
 	File::replace__variable( $path_to_config, 'spam_firewall', true );
-    File::replace__variable( $path_to_config, 'general_post_exclusion_usage', false );
+    File::replace__variable( $path_to_config, 'service_field_in_post_exclusion_enabled', false );
 
 	// Deleting cron tasks
 	File::replace__variable( CLEANTALK_CRON_FILE, 'tasks', array() );
@@ -266,6 +266,14 @@ function detect_cms( $path_to_index, $out = 'Unknown' ){
         if ( preg_match('/(moodle.*?)/', $index_file) ) {
             $out = 'moodle';
         }
+		// OpenMage
+        if ( preg_match('/(OpenMage.*?)/', $index_file) ) {
+            $out = 'OpenMage';
+        }
+        // vBulletin
+        if ( preg_match('/(vBulletin.*?)/', $index_file) ) {
+            $out = 'vBulletin';
+        }
     }
 
 	return $out;
@@ -296,13 +304,13 @@ function apbct__plugin_update_message() {
  */
 function apbct__cscart_js_snippet() {
     global $apikey, $apbct_salt, $detected_cms;
-    
+
     // Only for CsCart
     if ($detected_cms != 'cscart') return;
-    
+
     $apbct_checkjs_hash = apbct_checkjs_hash($apikey, $apbct_salt);
     ?>
-    
+
     <div class="highlight">
         <h4>Add this code to all pages of the site (use the basic template). Detailed instruction is <a href="https://blog.cleantalk.org/protecting-cs-cart-website-from-spam/">here</a></h4>
         <pre tabindex="0" class="chroma">
@@ -315,4 +323,131 @@ function apbct__cscart_js_snippet() {
     </div>
 
     <?php
+}
+
+/**
+ * @return string
+ */
+function apbct__prepare_form_sign_exclusions_textarea()
+{
+    global $form_post_signs_exclusions_set;
+
+    if (!is_array($form_post_signs_exclusions_set)) {
+        $form_post_signs_exclusions_set = array();
+    }
+
+    $hint_text = 'Regular expression. If the form contains any of these signs in POST array keys or in value of "action" key, the whole form submission is excluded from spam checking.';
+    $link_learn_more = 'https://cleantalk.org/help/exclusion-by-form-signs?utm_id=&utm_term=&utm_source=admin_panel&utm_medium=settings&utm_content=uni_hint_exclusions__form_signs&utm_campaign=uni_links';
+
+    $template = '
+        <p>%s</br><span style="%s"><a href="%s" target="_blank">Learn more</a></span></p>
+        <textarea id="form_signs_exclusions-textarea" name="form_signs_exclusions-textarea" style="%s">%s</textarea>
+    ';
+    $signs = '';
+    foreach ( $form_post_signs_exclusions_set as $sign) {
+        if (is_string($sign)) {
+            $signs .= $sign . "\r\n";
+        }
+    }
+
+    $style_textarea = 'word-break: break-all; padding: 1%; background: #fff; width: 100%';
+    $style_span = 'display: flex; justify-content: flex-end; margin: 1%';
+
+    return sprintf($template, $hint_text, $style_span, $link_learn_more, $style_textarea, htmlspecialchars($signs));
+}
+
+function apbct__prepare_service_field_exclusion_layout()
+{
+    global $exclusion_key;
+
+    if (!empty($exclusion_key)) {
+        $service_field = htmlspecialchars('<input id="any_id_1" name="ct_service_data" type="hidden" value="'. $exclusion_key .'">');
+    } else {
+        $service_field = 'Error! Can not gain exclusion key.';
+    }
+
+    $hint_text = 'Regular expression. If the form contains any of these signs in POST array keys or in value of "action" key, the whole form submission is excluded from spam checking.';
+    $style = 'border: solid 1px; word-break: break-all; padding: 1%; background: #fff;';
+
+    $template = '
+        <p>%s</p>
+        <div id="exclusion-html" style="%s">
+        %s
+        </div>
+    ';
+
+    return $exclusion_key ? sprintf($template, $hint_text, $style, $service_field) : $service_field;
+}
+/**
+ * Sanitize and validate exclusions.
+ * Explode given string by commas and trim each string.
+ * Cut first 20 entities if more than 20 given. Remove duplicates.
+ * Skip element if it's empty. Validate entity as URL. Cut first 128 chars if more than 128 given
+ *
+ * Return false if exclusion is bad
+ * Return sanitized string if all is ok
+ *
+ * @param string $exclusions
+ * @param bool $regexp
+ *
+ * @return bool|string|array
+ */
+function apbct_settings__sanitize__exclusions($exclusions, $return_array = false, $regexp = true, $urls = false)
+{
+    if ( ! is_string($exclusions) ) {
+        return false;
+    }
+
+    $result = array();
+    $type   = 0;
+
+    if ( ! empty($exclusions) ) {
+        if ( strpos($exclusions, "\r\n") !== false ) {
+            $exclusions = explode("\r\n", $exclusions);
+            $type       = 2;
+        } elseif ( strpos($exclusions, "\n") !== false ) {
+            $exclusions = explode("\n", $exclusions);
+            $type       = 1;
+        } else {
+            $exclusions = explode(',', $exclusions);
+        }
+        //Drop duplicates first (before cut)
+        $exclusions = array_unique($exclusions);
+        //Take first 20 exclusions entities
+        $exclusions = array_slice($exclusions, 0, 20);
+        //Sanitizing
+        foreach ($exclusions as $exclusion) {
+            //Cut exclusion if more than 128 symbols gained
+            $sanitized_exclusion = substr($exclusion, 0, 128);
+            $sanitized_exclusion = trim($sanitized_exclusion);
+
+            if ( ! empty($sanitized_exclusion) ) {
+                if ( $regexp ) {
+                    if ( @preg_match('/' . $exclusion . '/', '') === false) {
+                        return false;
+                    }
+                } elseif ( $urls ) {
+                    if (
+                        ( strpos($exclusion, 'http://') !== false || strpos($exclusion, 'https://') !== false ) &&
+                        filter_var($exclusion, FILTER_VALIDATE_URL)
+                    ) {
+                        return false;
+                    }
+                }
+                $result[] = $sanitized_exclusion;
+            }
+        }
+    }
+    if ($return_array) {
+        return $result;
+    }
+    switch ( $type ) {
+        case 0:
+        default:
+            return implode(',', $result);
+        case 1:
+            return implode("\n", $result);
+        case 2:
+            return implode("\r\n", $result);
+    }
 }

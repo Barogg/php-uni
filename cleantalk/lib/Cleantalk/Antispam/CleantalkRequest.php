@@ -12,25 +12,25 @@ class CleantalkRequest {
      * @var string
      */
      public $all_headers = null;
-     
+
      /**
      *  IP address of connection
      * @var string
      */
      //public $remote_addr = null;
-     
+
      /**
      *  Last error number
      * @var integer
      */
      public $last_error_no = null;
-     
+
      /**
      *  Last error time
      * @var integer
      */
      public $last_error_time = null;
-     
+
      /**
      *  Last error text
      * @var string
@@ -117,8 +117,11 @@ class CleantalkRequest {
      * @var int
      */
     public $submit_time = null;
-    
+
     public $x_forwarded_for = '';
+
+    public $x_forwarded_for_last = '';
+
     public $x_real_ip = '';
 
     /**
@@ -147,22 +150,22 @@ class CleantalkRequest {
 
     /**
      * Phone number
-     * @var type 
+     * @var type
      */
     public $phone = null;
-    
+
     /**
     * Method name
     * @var string
     */
-    public $method_name = 'check_message'; 
+    public $method_name = 'check_message';
 
     /**
      * Fill params with constructor
      * @param type $params
      */
     public function __construct($params = null) {
-		
+
 		// IPs
 		$this->sender_ip       = isset($params['sender_ip'])       ? (string)$params['sender_ip']       : null;
 		$this->x_forwarded_for = isset($params['x_forwarded_for']) ? (string)$params['x_forwarded_for'] : null;
@@ -178,14 +181,14 @@ class CleantalkRequest {
 		$this->submit_time     = isset($params['submit_time'])      ? (int)$params['submit_time']                 : null;
 		$this->post_info       = isset($params['post_info'])        ? (string)json_encode($params['post_info'])   : null;
 		$this->sender_info     = isset($params['sender_info'])      ? (string)json_encode($params['sender_info']) : null;
-		
+
 		// Message
 		$this->message         = !empty($params['message']) ? serialize($params['message']) : null;
 		$this->example         = !empty($params['example']) ? serialize($params['example']) : null;
-		
+
 		// Feedback
 		$this->feedback        = !empty($params['feedback']) ? $params['feedback'] : null;
-				
+
     }
 
 }

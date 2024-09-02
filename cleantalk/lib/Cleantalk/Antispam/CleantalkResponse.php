@@ -2,6 +2,8 @@
 
 namespace Cleantalk\Antispam;
 
+use Cleantalk\Common\Helper;
+
 /**
  * Response class
  */
@@ -135,8 +137,8 @@ class CleantalkResponse {
             $this->errno = (isset($obj->errno)) ? $obj->errno : 0;
             $this->errstr = (isset($obj->errstr)) ? preg_replace("/.+(\*\*\*.+\*\*\*).+/", "$1", $obj->errstr) : null;
 
-            $this->stop_words = isset($obj->stop_words) ? utf8_decode($obj->stop_words) : null;
-            $this->comment = isset($obj->comment) ? utf8_decode($obj->comment) : null;
+            $this->stop_words = isset($obj->stop_words) ? Helper::fromUTF8($obj->stop_words) : null;
+            $this->comment = isset($obj->comment) ? Helper::fromUTF8($obj->comment) : null;
             $this->blacklisted = (isset($obj->blacklisted)) ? $obj->blacklisted : null;
             $this->allow = (isset($obj->allow)) ? $obj->allow : 1;
             $this->id = (isset($obj->id)) ? $obj->id : null;

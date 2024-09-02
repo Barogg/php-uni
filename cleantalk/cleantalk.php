@@ -66,7 +66,7 @@
 		global $apbct_checkjs_val;
 		if(
 			!(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') // No ajax
-			&& preg_match('/^\s*(<!doctype|<html)[\s\S]*html>/i', $buffer) == 1 // Only for HTML documents
+			&& preg_match('/\s*(<!doctype|<html)[\s\S]*html>/i', $buffer) == 1 // Only for HTML documents
 		){
 			$html_addition =
 				'<script>var apbct_checkjs_val = "' . $apbct_checkjs_val . '";</script>'
@@ -117,9 +117,14 @@
         apbct_spam_test($_GET);
     }
 
+    $request_data = $_POST;
+    if ( empty($request_data) ) {
+        $request_data = getRequestDataFromRaw();
+    }
+
 	// General spam test
-	if(!empty($_POST)){
-		apbct_spam_test($_POST);
+	if( ! empty($request_data) ){
+		apbct_spam_test($request_data);
 	}
 
 	// Set Cookies test for cookie test

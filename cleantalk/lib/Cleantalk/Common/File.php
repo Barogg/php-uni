@@ -10,7 +10,7 @@ namespace Cleantalk\Common;
  * @package Cleantalk
  */
 class File{
-	
+
 	/**
 	 * Removes content from file in tag
 	 * Tags example:
@@ -29,7 +29,7 @@ class File{
 			? self::clean__pattern( $file_path, $pattern )
 			: Err::add( __CLASS__, __FUNCTION__, 'Pattern wrong', $pattern );
 	}
-	
+
 	/**
 	 * Removes variable from file
 	 *
@@ -70,17 +70,17 @@ class File{
 	 * @return bool| /Cleantalk/Err
 	 */
 	public static function clean__pattern( $file_path, $pattern ){
-		
+
 		if( is_file( $file_path ) || is_writable( $file_path ) ){
-			
+
 			$file_content = file_get_contents( $file_path );
-			
+
 			if( $file_content ){
-				
+
 				// Cleaning up
 				$new_content = preg_replace( '/' . $pattern . '/', '', $file_content, 1 );
 				$result = $new_content !== null ? true : false;
-				
+
 				if($result){
 					if( file_put_contents( $file_path, $new_content, LOCK_EX ) ){
 						return true;
@@ -93,7 +93,7 @@ class File{
 		}else
 			return Err::add(__CLASS__, __FUNCTION__, 'No file'); // No template PHP file
 	}
-	
+
 	public static function replace__variable( $file_path, $variable, $value, $serialized = false ){
         if ($serialized) {
             $value = serialize($value);
@@ -106,7 +106,14 @@ class File{
 		static::replace__code( $file_path, $injection, $needle );
 	}
 
-	public static function get__variable($file_path, $variable, $serialized = false)
+    /**
+     * @param $file_path
+     * @param $variable
+     * @param $serialized
+     * @return false|int|mixed|string
+     * todo use JSON to avoid serialization
+     */
+    public static function get__variable($file_path, $variable, $serialized = false)
 	{
 		if (!is_file($file_path)) {
 			return Err::add(__CLASS__, __FUNCTION__, 'File not found', $file_path); // No PHP file
@@ -121,9 +128,12 @@ class File{
         if ($value_start === false) {
             return false;
         }
-		$value_end = strpos($file_content, ';', $value_start);
+        $value_end = strpos($file_content, ';', $value_start);
         if ($serialized) {
-            $value_end = strpos($file_content, ';\n', $value_start);
+            $value_end = strpos($file_content, ";\r\n", $value_start);
+            if (!$value_end) {
+                $value_end = strpos($file_content, ";\n", $value_start);
+            }
         }
 		$value = substr($file_content, $value_start + strlen($variable) + 4, $value_end - $value_start - strlen($variable) - 4);
 		$value = trim($value, " \t\n\r\0\x0B'\"\'");
@@ -138,20 +148,20 @@ class File{
 
 		return $value;
 	}
-	
+
 	public static function replace__code( $file_path, $injection, $needle ){
-		
+
 		if( is_file( $file_path ) ){
-			
+
 			if( is_writable( $file_path ) ){
-				
+
 				$file_content = file_get_contents( $file_path );
-				
+
 				if( $file_content ){
-					
+
 					$new_content = preg_replace("/$needle/", $injection, $file_content, 1);
 					$result = $new_content !== null ? true : false;
-					
+
 					if($result){
 						if( $bytes = file_put_contents( $file_path, $new_content, LOCK_EX ) ){
 							return $bytes;
@@ -166,15 +176,15 @@ class File{
 		}else
 			return Err::add(__CLASS__, __FUNCTION__, 'File not found', $file_path); // No PHP file
 	}
-	
+
 	public static function inject__tag__start( $file_path, $tag ){
 		self::inject__code( $file_path, self::tag__php__start( $tag ) );
 	}
-	
+
 	public static function inject__tag__end( $file_path, $tag ){
 		self::inject__code( $file_path, self::tag__php__end( $tag ) );
 	}
-	
+
 	public static function inject__variable( $file_path, $variable, $value, $serialize = false, $compact = false ){
         if ($serialize) {
             $value = serialize($value);
@@ -183,21 +193,21 @@ class File{
 		$value = $compact ? preg_replace( '/\s*/', '', $value ) : $value;
 		self::inject__code( $file_path, "\$$variable = $value;" );
 	}
-	
+
 	public static function inject__code( $file_path, $injection, $needle = '<\?php', $tag = null ){
-		
+
 		if( is_file( $file_path ) ){
-			
+
 			if( is_writable( $file_path ) ){
-				
+
 				$file_content = file_get_contents( $file_path );
-				
+
 				if( $file_content ){
-					
+
 					$replacement = $tag
 						? self::tag__php__start( $tag ) . PHP_EOL . $injection . PHP_EOL . self::tag__php__end( $tag )
 						: $injection;
-					
+
 					switch ($needle){
 						case 'start':
 							$new_content = $replacement . $file_content;
@@ -208,7 +218,7 @@ class File{
 						default:
 							$new_content = preg_replace("/$needle/", "$0" . PHP_EOL . $replacement, $file_content, 1);
 					}
-					
+
 					$result = $new_content !== null && $new_content != $file_content ? true : false;
 					if($result){
 						if( file_put_contents( $file_path, $new_content, LOCK_EX ) ){
@@ -224,11 +234,11 @@ class File{
 		}else
 			return Err::add(__CLASS__, __FUNCTION__, 'File not found', $file_path); // No PHP file
 	}
-	
+
 	public static function tag__php__start( $tag ){
 		return "\n//Cleantalk/$tag/start";
 	}
-	
+
 	public static function tag__php__end( $tag ){
 		return "\n//Cleantalk/$tag/end";
 	}

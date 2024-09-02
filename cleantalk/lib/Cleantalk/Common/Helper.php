@@ -541,11 +541,19 @@ class Helper{
 						break;
 
 					case 'get':
-						$opts[ CURLOPT_URL ] .= $data ? '?' . str_replace( "&amp;", "&", http_build_query( $data ) ) : '';
-						$opts[CURLOPT_POST] = false;
-						$opts[CURLOPT_POSTFIELDS] = null;
+                        try {
+                            $data = is_string($data) ? json_decode($data, true, 512, JSON_THROW_ON_ERROR) : $data;
+                        } catch (\JsonException) {
+                            $data = false;
+                        }
+                        if (is_array($data)) {
+                            $opts[ CURLOPT_URL ] .= $data ? '?' . str_replace( "&amp;", "&", http_build_query( $data ) ) : '';
+                            $opts[CURLOPT_POST] = false;
+                            $opts[CURLOPT_POSTFIELDS] = null;
+                        } else {
+                            return array('error' => 'CURL. Preparing GET request: data param is not valid.');
+                        }
 						break;
-
 					case 'ssl':
 						$opts[CURLOPT_SSL_VERIFYPEER] = true;
 						$opts[CURLOPT_SSL_VERIFYHOST] = 2;
@@ -603,16 +611,30 @@ class Helper{
 				$result  = (int) preg_replace( '/.*(\d{3}).*/', '$1', $headers[0] );
 
 			// Making common request
-			}else{
-				$opts    = array(
-					'http' => array(
-						'method'  => in_array( 'get', $presets ) ? 'GET' : 'POST',
-						'timeout' => 5,
-						'content' => str_replace( "&amp;", "&", http_build_query( $data ) ),
-					),
-				);
-				$context = stream_context_create( $opts );
-				$result  = @file_get_contents( $url, 0, $context );
+			} else {
+                $method = in_array( 'get', $presets ) ? 'GET' : 'POST';
+                if ($method === 'GET') {
+                    try {
+                        $data = is_string($data) ? json_decode($data, true, 512, JSON_THROW_ON_ERROR) : $data;
+                        $data = str_replace( "&amp;", "&", http_build_query( $data ) );
+                    } catch (\JsonException) {
+                        $data = false;
+                    }
+                }
+
+                if (is_string($data)) {
+                    $opts    = array(
+                        'http' => array(
+                            'method'  => $method,
+                            'timeout' => 5,
+                            'content' => $data,
+                        ),
+                    );
+                    $context = stream_context_create( $opts );
+                    $result  = @file_get_contents( $url, 0, $context );
+                } else {
+                    return array('error' => 'No CURL. Preparing GET request: data param is not valid.');
+                }
 			}
 
 			$out = $result === false
@@ -795,7 +817,7 @@ class Helper{
 
 			//String
 		}else{
-			if(preg_match('u', $obj) && function_exists('mb_convert_encoding') && $data_codepage !== null)
+			if(preg_match('/u/', $obj) && function_exists('mb_convert_encoding') && $data_codepage !== null)
 				$obj = mb_convert_encoding($obj, $data_codepage, 'UTF-8');
 		}
 		return $obj;
