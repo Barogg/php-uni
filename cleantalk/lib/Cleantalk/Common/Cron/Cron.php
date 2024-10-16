@@ -82,7 +82,13 @@ class Cron
         /** @var \Cleantalk\Common\StorageHandler\StorageHandler $storage_handler_class */
         $storage_handler_class = Mloader::get('StorageHandler');
         $storage_handler_class = new $storage_handler_class();
-        return (int)$storage_handler_class->getSetting('cleantalk_cron_last_start');
+        $cron_last_start = $storage_handler_class->getSetting('cleantalk_cron_last_start');
+    
+    	if (is_numeric($cron_last_start)) {
+        	return (int)$cron_last_start;
+		}
+
+    	return 0;
     }
 
     /**
@@ -118,15 +124,20 @@ class Cron
      *
      * @return array
      */
-    public function getTasks()
-    {
-        /** @var \Cleantalk\Common\StorageHandler\StorageHandler $storage_handler_class */
-        $storage_handler_class = Mloader::get('StorageHandler');
-        $storage_handler_class = new $storage_handler_class();
-        $tasks = $storage_handler_class->getSetting($this->cron_option_name);
-
-        return empty($tasks) ? array() : $tasks;
+	public function getTasks()
+	{
+    /** @var \Cleantalk\Common\StorageHandler\StorageHandler $storage_handler_class */
+    $storage_handler_class = Mloader::get('StorageHandler');
+    $storage_handler_class = new $storage_handler_class();
+    $tasks = $storage_handler_class->getSetting($this->cron_option_name);
+	// If the result is an error object
+    if ($tasks instanceof \Cleantalk\Common\Err) {
+        error_log('Error fetching tasks: ' . print_r($tasks, true)); 
+        return array(); 
     }
+
+    return empty($tasks) ? array() : $tasks;
+	}
 
     /**
      * Adding new cron task.

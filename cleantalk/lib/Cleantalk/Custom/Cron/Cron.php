@@ -10,6 +10,11 @@ class Cron extends \Cleantalk\Common\Cron\Cron
     }
     public function checkCronData()
     {
+	// Checking that $this->tasks is an array
+	if (!is_array($this->tasks)) {
+			
+		$this->tasks = [];
+	}
         $unexists = array_diff(['plugin_get_latest_version', 'sfw_update', 'sfw_send_logs'], array_keys($this->tasks));
         if (!empty($unexists)) {
             foreach ($unexists as $task) {
